@@ -106,7 +106,7 @@ async fn main() -> eyre::Result<()> {
     let old_state = todo!();
 
     loop {
-        let new_state = todo!();
+        let current_state = todo!();
 
         let (bearing, distance) = command_from_vision_state(current_state, old_state);
         motion_step(&mut wheels, &mut motor, bearing, distance).await;
