@@ -1,9 +1,17 @@
 use hs_hackathon::prelude::*;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Point {
     x: f64,
     y: f64,
+}
+
+impl From<BoundingBox> for Point {
+    fn from(b: BoundingBox) -> Self {
+        let x = (b.x_min() as f64 + b.x_max() as f64) / 2.0;
+        let y = (b.y_min() as f64 + b.y_max() as f64) / 2.0;
+        Self { x, y }
+    }
 }
 
 impl Point {
@@ -106,22 +114,38 @@ async fn main() -> eyre::Result<()> {
     let mut motor = MotorSocket::open().await?;
     let mut drone = Camera::connect().await?;
     
-    let ledconfig = LedDetectionConfig::default();
+    let ledconfig = LedDetectionConfig{
+        threshold_value: 20,
+        ..Default::default()
+    };
     
     // let old_state = todo!();
-    while let Ok(frame) = drone.snapshot().await {
+    while let Ok(frame) = drone.snapshot().await.map_err(|err| eprintln!("{err}")) {
         // 1. Process  frame into 2 points 
         
         match detect(&frame.0, &ledconfig){
                 Ok(leds) => {
-                    println!("Leds : {:?}",leds);
+                    println!("Leds : {:#?}",leds);
+
+                    let car = leds.iter().find(|l| l.color == Color::Red);
+                    let target = leds.iter().find(|l| l.color == Color::Green || l.color == Color::White);
+                    println!("car: {:#?}", car);
+                    println!("target: {:#?}", target);
+
+                    if let (Some(car), Some(target)) = (car, target) {
+                        let car_pos : Point = car.bbox.into();
+                        let target_pos : Point = target.bbox.into();
+                        println!("car: {:#?}", car_pos);
+                        println!("target: {:#?}", target_pos);
+                    }
+
                 },
                 Err(err) => {
                     println!("Report : {}" , err);
                 },
         };
 
-        let current_state = todo!();
+//        let current_state = todo!();
 
         // 2. Naviagate vehicle based on two points
          
@@ -130,7 +154,7 @@ async fn main() -> eyre::Result<()> {
 
         // old_state = current_state;
 
-        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         // TODO exit when reach goal
     }
 
