@@ -1,5 +1,6 @@
 use hs_hackathon::prelude::*;
 
+#[derive(PartialEq)]
 struct Point {
     x: f64,
     y: f64,
@@ -32,6 +33,8 @@ impl Point {
         }
     }
 }
+
+
 
 struct VisionState {
     target_position: Point,
@@ -101,19 +104,34 @@ async fn motion_step(
 async fn main() -> eyre::Result<()> {
     let mut wheels = WheelOrientation::new().await?;
     let mut motor = MotorSocket::open().await?;
-    // let mut drone = Camera::connect().await?;
+    let mut drone = Camera::connect().await?;
+    
+    let ledconfig = LedDetectionConfig::default();
+    
+    // let old_state = todo!();
+    while let Ok(frame) = drone.snapshot().await {
+        // 1. Process  frame into 2 points 
+        
+        match detect(&frame.0, &ledconfig){
+                Ok(leds) => {
+                    println!("Leds : {:?}",leds);
+                },
+                Err(err) => {
+                    println!("Report : {}" , err);
+                },
+        };
 
-    let old_state = todo!();
-
-    loop {
         let current_state = todo!();
 
-        let (bearing, distance) = command_from_vision_state(current_state, old_state);
-        motion_step(&mut wheels, &mut motor, bearing, distance).await;
+        // 2. Naviagate vehicle based on two points
+         
+        // let (bearing, distance) = command_from_vision_state(current_state, old_state);
+        // motion_step(&mut wheels, &mut motor, bearing, distance).await;
 
-        old_state = current_state;
+        // old_state = current_state;
 
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // TODO exit when reach goal
     }
 
     Ok(())
