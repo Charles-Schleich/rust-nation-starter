@@ -6,9 +6,10 @@ async fn motion_step(
     bearing_to_target: f64,
     distance_to_target: f64,
 ) {
-    const ANGLE_THRESHOLD : f64 = 10.0;
+    const DISTANCE_THRESHOLD: f64 = 10.0;
+    const ANGLE_THRESHOLD: f64 = 10.0;
 
-    let forwards = if distance_to_target < ANGLE_THRESHOLD {
+    let forwards = if distance_to_target < DISTANCE_THRESHOLD {
         println!("stop");
         Velocity::none()
     } else {
@@ -19,7 +20,7 @@ async fn motion_step(
     let direction = if bearing_to_target >= ANGLE_THRESHOLD {
         println!("left");
         Angle::left()
-    } else if bearing_to_target <= -10.0 {
+    } else if bearing_to_target <= -ANGLE_THRESHOLD {
         println!("right");
         Angle::right()
     } else {
@@ -30,7 +31,9 @@ async fn motion_step(
     let ok = wheels.set(direction).await;
     println!("steering: {:?}", ok);
 
-    let ok = motor.move_for(forwards, std::time::Duration::from_secs(10)).await;
+    let ok = motor
+        .move_for(forwards, std::time::Duration::from_secs(10))
+        .await;
     println!("motor: {:?}", ok);
 }
 
@@ -38,12 +41,11 @@ async fn motion_step(
 async fn main() -> eyre::Result<()> {
     let mut wheels = WheelOrientation::new().await?;
     let mut motor = MotorSocket::open().await?;
-//    let mut drone = Camera::connect().await?;
+    // let mut drone = Camera::connect().await?;
 
+    // Demo
     motion_step(&mut wheels, &mut motor, 30.0, 50.0).await;
-
     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-
     motion_step(&mut wheels, &mut motor, -12.0, 40.0).await;
 
     Ok(())
