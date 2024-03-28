@@ -87,11 +87,11 @@ async fn motion_step(
     };
 
     let direction = if bearing_to_target >= ANGLE_THRESHOLD {
-        println!("left");
-        Angle::left()
-    } else if bearing_to_target <= -ANGLE_THRESHOLD {
         println!("right");
         Angle::right()
+    } else if bearing_to_target <= -ANGLE_THRESHOLD {
+        println!("left");
+        Angle::left()
     } else {
         println!("straight");
         Angle::straight()
