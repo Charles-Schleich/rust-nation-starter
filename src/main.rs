@@ -42,8 +42,6 @@ impl Point {
     }
 }
 
-
-
 struct VisionState {
     target_position: Point,
     car_position: Point,
@@ -119,7 +117,8 @@ async fn main() -> eyre::Result<()> {
         ..Default::default()
     };
     
-    // let old_state = todo!();
+    let mut old_state : Option<VisionState> = None;
+
     while let Ok(frame) = drone.snapshot().await.map_err(|err| eprintln!("{err}")) {
         // 1. Process  frame into 2 points 
         
@@ -133,10 +132,24 @@ async fn main() -> eyre::Result<()> {
                     println!("target: {:#?}", target);
 
                     if let (Some(car), Some(target)) = (car, target) {
-                        let car_pos : Point = car.bbox.into();
-                        let target_pos : Point = target.bbox.into();
-                        println!("car: {:#?}", car_pos);
-                        println!("target: {:#?}", target_pos);
+                        let car_position : Point = car.bbox.into();
+                        let target_position : Point = target.bbox.into();
+                        println!("car: {:#?}", car_position);
+                        println!("target: {:#?}", target_position);
+
+                        let current_state = VisionState{
+                            target_position,
+                            car_position
+                        };
+
+                        if let Some(old_state) = old_state {
+                            // 2. Naviagate vehicle based on two points
+             
+                            let (bearing, distance) = command_from_vision_state(&current_state, &old_state);
+                            motion_step(&mut wheels, &mut motor, bearing, distance).await;
+                        }
+
+                        old_state = Some(current_state);
                     }
 
                 },
@@ -144,15 +157,6 @@ async fn main() -> eyre::Result<()> {
                     println!("Report : {}" , err);
                 },
         };
-
-//        let current_state = todo!();
-
-        // 2. Naviagate vehicle based on two points
-         
-        // let (bearing, distance) = command_from_vision_state(current_state, old_state);
-        // motion_step(&mut wheels, &mut motor, bearing, distance).await;
-
-        // old_state = current_state;
 
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         // TODO exit when reach goal
